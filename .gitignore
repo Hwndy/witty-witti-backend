@@ -1,5 +1,5 @@
 # Dependencies
-/node_modules
+node_modules
 
 # Environment variables
 .env
@@ -16,8 +16,8 @@ pids
 *.pid.lock
 
 # Directory for uploaded files
-/uploads/*
-!/uploads/.gitkeep
+/public/uploads/*
+!/public/uploads/.gitkeep
 
 # IDE
 .idea

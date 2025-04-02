@@ -19,10 +19,6 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 
-// Import models for initial data setup
-import User from './models/User.js';
-import Product from './models/Product.js';
-
 // Load environment variables
 dotenv.config();
 
@@ -40,10 +36,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb+srv://suleayo04:sulaimon@cluster0.u1quc.mongodb.net/witty-witi?retryWrites=true&w=majority&appName=Cluster0')
-  .then(async () => {
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
     console.log('MongoDB connected successfully');
-    // Your existing MongoDB initialization code...
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
@@ -58,7 +53,7 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/settings', settingsRoutes);
 
 // Serve static files for uploads
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Basic route for API status
 app.get('/', (req, res) => {

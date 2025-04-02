@@ -2,6 +2,11 @@ import { ErrorResponse } from '../utils/errorHandler.js';
 
 // Handle 404 errors
 export const notFound = (req, res, next) => {
+  // Skip 404 for favicon.ico
+  if (req.originalUrl === '/favicon.ico') {
+    return res.status(204).end();
+  }
+  
   const error = new Error(`Not Found - ${req.originalUrl}`);
   res.status(404);
   next(error);
@@ -13,7 +18,9 @@ export const errorHandler = (err, req, res, next) => {
   error.message = err.message;
 
   // Log error for development
-  console.error(err);
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(err);
+  }
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {
@@ -31,17 +38,6 @@ export const errorHandler = (err, req, res, next) => {
   if (err.name === 'ValidationError') {
     const message = Object.values(err.errors).map(val => val.message);
     error = new ErrorResponse(message, 400);
-  }
-
-  // JWT errors
-  if (err.name === 'JsonWebTokenError') {
-    const message = 'Invalid token';
-    error = new ErrorResponse(message, 401);
-  }
-
-  if (err.name === 'TokenExpiredError') {
-    const message = 'Token expired';
-    error = new ErrorResponse(message, 401);
   }
 
   res.status(error.statusCode || 500).json({

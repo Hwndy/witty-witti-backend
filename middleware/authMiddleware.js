@@ -3,21 +3,45 @@ import User from '../models/User.js';
 import { ErrorResponse } from '../utils/errorHandler.js';
 
 export const protect = async (req, res, next) => {
-  let token;
-
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
+  try {
+    let token;
+    
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
+    }
+    
+    if (!token) {
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Not authorized to access this route' 
+      });
+    }
+    
+    try {
+      // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
+      req.user = await User.findById(decoded.id);
+      
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
       next();
     } catch (error) {
-      return next(new ErrorResponse('Not authorized to access this route', 401));
+      return res.status(401).json({
+        success: false,
+        message: 'Token is invalid or expired'
+      });
     }
-  }
-
-  if (!token) {
-    return next(new ErrorResponse('Not authorized to access this route', 401));
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Server authentication error',
+      error: error.message
+    });
   }
 };
 

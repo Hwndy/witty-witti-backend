@@ -81,8 +81,17 @@ export const createProduct = async (req, res) => {
     let imageType;
 
     if (imageUrl) {
-      image = imageUrl;
-      imageType = 'url';
+      // Validate image URL
+      try {
+        const url = new URL(imageUrl);
+        if (url.protocol !== 'https:') {
+          return res.status(400).json({ message: 'Image URL must use HTTPS protocol' });
+        }
+        image = imageUrl;
+        imageType = 'url';
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid image URL' });
+      }
     } else if (req.file) {
       image = `/uploads/${req.file.filename}`;
       imageType = 'upload';

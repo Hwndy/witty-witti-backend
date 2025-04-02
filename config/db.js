@@ -8,24 +8,25 @@ const connectDB = async () => {
     const MONGODB_URI = process.env.MONGODB_URI;
     
     if (!MONGODB_URI) {
-      throw new Error('MongoDB URI is not found in environment variables');
+      console.error('Available environment variables:', Object.keys(process.env));
+      throw new Error('MongoDB URI is not found in environment variables. Please check your Render environment configuration.');
     }
 
-    // Increased timeouts for Render's free tier
+    console.log('Attempting to connect to MongoDB...');
+
     const conn = await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 120000, // 2 minutes
-      socketTimeoutMS: 120000, // 2 minutes
-      connectTimeoutMS: 120000, // 2 minutes
+      serverSelectionTimeoutMS: 120000,
+      socketTimeoutMS: 120000,
+      connectTimeoutMS: 120000,
       keepAlive: true,
-      keepAliveInitialDelay: 300000, // 5 minutes
-      dbName: 'witty-witi' // Explicitly specify the database name
+      keepAliveInitialDelay: 300000,
+      dbName: 'witty-witi'
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     
-    // Add connection error handlers
     mongoose.connection.on('error', err => {
       console.error('MongoDB connection error:', err);
     });
@@ -41,11 +42,12 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error(`MongoDB connection error: ${error.message}`);
-    // Retry logic for initial connection
+    
     if (process.env.NODE_ENV === 'production') {
+      console.log('Current NODE_ENV:', process.env.NODE_ENV);
       console.log('Retrying connection in 30 seconds...');
-      await new Promise(resolve => setTimeout(resolve, 30000)); // Wait 30 seconds
-      return connectDB(); // Retry connection
+      await new Promise(resolve => setTimeout(resolve, 30000));
+      return connectDB();
     } else {
       process.exit(1);
     }

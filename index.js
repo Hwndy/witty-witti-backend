@@ -69,9 +69,16 @@ const startServer = async () => {
     await connectDB();
     
     // Start the server
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
+
+    // Increase timeout for all requests
+    server.timeout = 60000;
+
+    // Enable keep-alive
+    server.keepAliveTimeout = 120000; // 2 minutes
+    server.headersTimeout = 120000; // 2 minutes
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

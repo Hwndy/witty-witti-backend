@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
@@ -9,7 +10,6 @@ import bcrypt from 'bcryptjs';
 dotenv.config();
 
 // Import middleware
-import corsConfig from './config/corsConfig.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 // Import routes
@@ -31,7 +31,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Middleware
-app.use(corsConfig);
+app.use(cors({
+  origin: ['http://localhost:5173', 'https://wittywiti.vercel.app'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

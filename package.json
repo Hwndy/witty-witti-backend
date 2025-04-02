@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "check-env": "node scripts/checkEnv.js",
     "ensure-admin": "node scripts/ensureAdmin.js"
   },
   "dependencies": {
@@ -22,3 +23,4 @@
     "nodemon": "^2.0.22"
   }
 }
+

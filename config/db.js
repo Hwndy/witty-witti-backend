@@ -15,11 +15,12 @@ const connectDB = async () => {
     const conn = await mongoose.connect(MONGODB_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 60000, // 60 seconds
-      socketTimeoutMS: 60000, // 60 seconds
-      connectTimeoutMS: 60000, // 60 seconds
+      serverSelectionTimeoutMS: 120000, // 2 minutes
+      socketTimeoutMS: 120000, // 2 minutes
+      connectTimeoutMS: 120000, // 2 minutes
       keepAlive: true,
-      keepAliveInitialDelay: 300000 // 5 minutes
+      keepAliveInitialDelay: 300000, // 5 minutes
+      dbName: 'witty-witi' // Explicitly specify the database name
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
@@ -31,6 +32,10 @@ const connectDB = async () => {
 
     mongoose.connection.on('disconnected', () => {
       console.log('MongoDB disconnected. Attempting to reconnect...');
+    });
+
+    mongoose.connection.on('connected', () => {
+      console.log('MongoDB connected successfully');
     });
 
     return conn;

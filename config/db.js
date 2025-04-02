@@ -1,50 +1,35 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { config } from './default.js';
 
 const connectDB = async () => {
   try {
-    const MONGODB_URI = process.env.MONGODB_URI;
+    const MONGODB_URI = process.env.MONGODB_URI || config.mongodb.uri;
     
-    if (!MONGODB_URI) {
-      console.error('Available environment variables:', Object.keys(process.env));
-      throw new Error('MongoDB URI is not found in environment variables. Please check your Render environment configuration.');
-    }
-
     console.log('Attempting to connect to MongoDB...');
+    console.log('Connection string format valid:', MONGODB_URI.startsWith('mongodb+srv://'));
 
+    mongoose.set('strictQuery', true);
+    
     const conn = await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 120000,
-      socketTimeoutMS: 120000,
-      connectTimeoutMS: 120000,
-      keepAlive: true,
-      keepAliveInitialDelay: 300000,
-      dbName: 'witty-witi'
+      ...config.mongodb.options,
+      autoIndex: process.env.NODE_ENV !== 'production', // Disable autoIndex in production
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
     
+    // Handle connection errors after initial connection
     mongoose.connection.on('error', err => {
       console.error('MongoDB connection error:', err);
     });
 
     mongoose.connection.on('disconnected', () => {
-      console.log('MongoDB disconnected. Attempting to reconnect...');
-    });
-
-    mongoose.connection.on('connected', () => {
-      console.log('MongoDB connected successfully');
+      console.log('MongoDB disconnected');
     });
 
     return conn;
   } catch (error) {
     console.error(`MongoDB connection error: ${error.message}`);
-    
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Current NODE_ENV:', process.env.NODE_ENV);
+    if (process.env.NODE_ENV === 'production' || config.server.env === 'production') {
       console.log('Retrying connection in 30 seconds...');
       await new Promise(resolve => setTimeout(resolve, 30000));
       return connectDB();

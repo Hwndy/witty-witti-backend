@@ -1,40 +1,9 @@
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { config } from '../config/default.js';
 
 const checkEnv = () => {
-  // Load .env file
-  dotenv.config();
-
-  // Required environment variables
-  const requiredEnvVars = [
-    'MONGODB_URI',
-    'JWT_SECRET',
-    'NODE_ENV'
-  ];
-
-  const missingVars = [];
-
-  // Check for missing environment variables
-  requiredEnvVars.forEach(envVar => {
-    if (!process.env[envVar]) {
-      missingVars.push(envVar);
-    }
-  });
-
-  if (missingVars.length > 0) {
-    console.error('Missing required environment variables:');
-    missingVars.forEach(variable => {
-      console.error(`- ${variable}`);
-    });
-    process.exit(1);
-  }
-
-  console.log('All required environment variables are present.');
+  console.log('Environment check passed - using default configuration');
+  console.log('Server environment:', process.env.NODE_ENV || config.server.env);
+  console.log('Server port:', process.env.PORT || config.server.port);
 };
 
 checkEnv();

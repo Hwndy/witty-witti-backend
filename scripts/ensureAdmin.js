@@ -1,13 +1,11 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
+import { config } from '../config/default.js';
 import User from '../models/User.js';
-
-dotenv.config();
 
 const ensureAdminExists = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI || config.mongodb.uri);
     
     // Check if admin exists
     const adminEmail = 'admin@wittywiti.com';

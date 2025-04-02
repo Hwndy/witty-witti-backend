@@ -1,26 +1,37 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import connectDB from './config/db.js';
-
-dotenv.config();
+import { config } from './config/default.js';
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || config.server.port;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Log environment status
-console.log('Environment Variables Status:');
-console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('Environment Status:');
+console.log('NODE_ENV:', process.env.NODE_ENV || config.server.env);
 console.log('PORT:', PORT);
-console.log('MongoDB URI exists:', !!process.env.MONGODB_URI);
 
 // Basic route to test server
 app.get('/', (req, res) => {
-  res.json({ message: 'Server is running' });
+  res.json({ 
+    message: 'Server is running',
+    environment: process.env.NODE_ENV || config.server.env,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ 
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
 });
 
 // Start server and connect to database
@@ -34,10 +45,24 @@ const startServer = async () => {
       console.log(`✅ Server running successfully on port ${PORT}`);
     });
 
-    // Increase timeout for all requests
-    server.timeout = 120000;
-    server.keepAliveTimeout = 120000;
-    server.headersTimeout = 120000;
+    // Configure server timeouts
+    server.timeout = config.server.timeouts.server;
+    server.keepAliveTimeout = config.server.timeouts.server;
+    server.headersTimeout = config.server.timeouts.headers;
+
+    // Graceful shutdown
+    const shutdown = async () => {
+      console.log('Received shutdown signal. Closing server...');
+      server.close(async () => {
+        console.log('Server closed. Disconnecting from database...');
+        await mongoose.disconnect();
+        console.log('Database disconnected. Exiting process.');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', shutdown);
 
   } catch (error) {
     console.error('❌ Failed to start server:', error);
@@ -50,6 +75,12 @@ startServer();
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Promise Rejection:', err);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
 });
 
 export default app;

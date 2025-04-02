@@ -1,24 +1,14 @@
 import cors from 'cors';
+import { config } from './default.js';
 
-// Configure CORS options
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://wittywiti.com', 
-        'https://wittywiti.vercel.app',
-        'https://witty-witti-backend.onrender.com'
-      ] 
-    : [
-        'http://localhost:5173', 
-        'http://localhost:5174', 
-        'https://wittywiti.vercel.app/',
-        'https://witty-witti-backend.onrender.com'
-      ],
+  origin: (process.env.NODE_ENV === 'production' || config.server.env === 'production')
+    ? config.cors.productionOrigins
+    : config.cors.developmentOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  maxAge: 86400 // 24 hours
+  maxAge: 86400
 };
 
-// Export configured CORS middleware
 export default cors(corsOptions);

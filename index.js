@@ -5,6 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 
+// Load environment variables before any other code
+dotenv.config();
+
 // Import middleware
 import corsConfig from './config/corsConfig.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
@@ -19,9 +22,6 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 
-// Load environment variables
-dotenv.config();
-
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -35,12 +35,18 @@ app.use(corsConfig);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://suleayo04:sulaimon@cluster0.u1quc.mongodb.net/witty-witi?retryWrites=true&w=majority";
+
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('MongoDB connected successfully');
   })
-  .catch(err => console.error('MongoDB connection error:', err));
+  .catch(err => {
+    console.error('MongoDB connection error:', err.message);
+    // Don't exit the process, let the server continue running
+    // process.exit(1);
+  });
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -57,7 +63,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Basic route for API status
 app.get('/', (req, res) => {
-  res.json({ message: 'API is running' });
+  res.json({ 
+    message: 'API is running',
+    environment: process.env.NODE_ENV,
+    mongodbConnected: mongoose.connection.readyState === 1
+  });
 });
 
 // Error handling middleware

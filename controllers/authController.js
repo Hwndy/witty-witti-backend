@@ -57,27 +57,39 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Find user and explicitly select password
+    // Find user
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
     
-    // Check password
+    // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
     }
-    
-    // Generate JWT token
+
+    // Generate JWT token with Buffer conversion for the secret
     const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { 
+        id: user._id, 
+        role: user.role,
+        email: user.email 
+      },
+      Buffer.from(process.env.JWT_SECRET).toString('utf-8'),
+      { 
+        expiresIn: '7d',
+        algorithm: 'HS256'
+      }
     );
     
-    // Send response without password
-    res.json({
+    res.status(200).json({
       success: true,
       token,
       user: {
@@ -89,10 +101,11 @@ export const login = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Server error', 
-      error: error.message 
+      message: 'Server error during login', 
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

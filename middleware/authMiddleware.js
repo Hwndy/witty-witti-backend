@@ -18,8 +18,12 @@ export const protect = async (req, res, next) => {
     }
     
     try {
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // Verify token with Buffer conversion for the secret
+      const decoded = jwt.verify(
+        token, 
+        Buffer.from(process.env.JWT_SECRET).toString('utf-8')
+      );
+      
       req.user = await User.findById(decoded.id);
       
       if (!req.user) {
@@ -37,10 +41,10 @@ export const protect = async (req, res, next) => {
       });
     }
   } catch (error) {
+    console.error('Auth middleware error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Server authentication error',
-      error: error.message
+      message: 'Internal server error'
     });
   }
 };

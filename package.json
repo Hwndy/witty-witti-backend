@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "ensure-admin": "node scripts/ensureAdmin.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -20,6 +21,7 @@
     "nodemon": "^2.0.22"
   }
 }
+
 
 
 

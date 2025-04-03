@@ -10,7 +10,8 @@
     "ensure-admin": "node scripts/ensureAdmin.js",
     "create-test-products": "node scripts/createTestProduct.js",
     "test-products": "node scripts/testProductEndpoints.js",
-    "deploy-help": "node deploy.js"
+    "deploy-help": "node deploy.js",
+    "deploy-guest-order": "node deploy-changes.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

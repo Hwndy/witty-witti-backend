@@ -1,8 +1,9 @@
 import express from 'express';
-import { 
-  createOrder, 
-  getOrders, 
-  getOrderById, 
+import {
+  createOrder,
+  createGuestOrder,
+  getOrders,
+  getOrderById,
   updateOrderStatus,
   updatePaymentStatus,
   cancelOrder
@@ -10,6 +11,9 @@ import {
 import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
+
+// Public route for guest orders
+router.post('/guest', createGuestOrder);
 
 // Protected routes
 router.post('/', protect, createOrder);

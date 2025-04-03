@@ -7,13 +7,13 @@ export const config = {
       serverSelectionTimeoutMS: 120000,
       socketTimeoutMS: 120000,
       connectTimeoutMS: 120000,
-      
+
       dbName: 'witty-witi'
     }
   },
   server: {
     port: 10000,
-    env: 'production',
+    env: 'development',
     timeouts: {
       server: 120000,
       headers: 120000

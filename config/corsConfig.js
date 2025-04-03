@@ -3,14 +3,21 @@ import { config } from './default.js';
 
 const corsOptions = {
   origin: function(origin, callback) {
-    const allowedOrigins = (process.env.NODE_ENV === 'production' || config.server.env === 'production')
+    const isProduction = process.env.NODE_ENV === 'production' || config.server.env === 'production';
+    const allowedOrigins = isProduction
       ? config.cors.productionOrigins
       : config.cors.developmentOrigins;
 
     // Allow requests with no origin (like mobile apps, curl requests)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+    // In development mode, allow all origins for easier testing
+    if (!isProduction) {
+      console.log('CORS: Development mode - allowing origin:', origin);
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);

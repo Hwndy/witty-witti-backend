@@ -3,15 +3,27 @@ import Product from '../models/Product.js';
 // Get all products with filtering, searching, and sorting
 export const getProducts = async (req, res) => {
   try {
+    console.log('Fetching products with query:', req.query);
+
+    // Set explicit CORS headers for this route
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+    }
+
     const { category, search, sort } = req.query;
-    
+
     let query = {};
-    
+
     // Filter by category
     if (category && category !== 'all') {
       query.category = category;
     }
-    
+
     // Search by name or description
     if (search) {
       query.$or = [
@@ -19,10 +31,10 @@ export const getProducts = async (req, res) => {
         { description: { $regex: search, $options: 'i' } }
       ];
     }
-    
+
     // Create base query
     let productsQuery = Product.find(query);
-    
+
     // Sort
     if (sort) {
       switch (sort) {
@@ -48,12 +60,30 @@ export const getProducts = async (req, res) => {
       // Default sort by newest
       productsQuery = productsQuery.sort({ createdAt: -1 });
     }
-    
-    const products = await productsQuery.exec();
-    
-    res.json(products);
+
+    try {
+      const products = await productsQuery.exec();
+      console.log(`Found ${products.length} products`);
+      return res.status(200).json(products);
+    } catch (dbError) {
+      console.error('Database error fetching products:', dbError);
+      // Set CORS headers again to ensure they're present in error responses
+      res.header('Access-Control-Allow-Origin', '*');
+      return res.status(500).json({
+        success: false,
+        message: 'Database error while fetching products',
+        error: dbError.message
+      });
+    }
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Unexpected error in getProducts:', error);
+    // Set CORS headers again to ensure they're present in error responses
+    res.header('Access-Control-Allow-Origin', '*');
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching products',
+      error: error.message
+    });
   }
 };
 
@@ -61,11 +91,11 @@ export const getProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    
+
     res.json(product);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -76,7 +106,7 @@ export const getProductById = async (req, res) => {
 export const createProduct = async (req, res) => {
   try {
     const { name, price, category, description, stock, featured, imageUrl } = req.body;
-    
+
     let image;
     let imageType;
 
@@ -98,7 +128,7 @@ export const createProduct = async (req, res) => {
     } else {
       return res.status(400).json({ message: 'Product image is required (either URL or file upload)' });
     }
-    
+
     const product = new Product({
       name,
       price: parseFloat(price),
@@ -109,7 +139,7 @@ export const createProduct = async (req, res) => {
       stock: parseInt(stock),
       featured: featured === 'true'
     });
-    
+
     await product.save();
     res.status(201).json(product);
   } catch (error) {
@@ -121,12 +151,12 @@ export const createProduct = async (req, res) => {
 export const updateProduct = async (req, res) => {
   try {
     const { name, price, category, description, stock, featured, imageUrl } = req.body;
-    
+
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    
+
     // Update fields
     if (name) product.name = name;
     if (price) product.price = parseFloat(price);
@@ -134,7 +164,7 @@ export const updateProduct = async (req, res) => {
     if (description) product.description = description;
     if (stock) product.stock = parseInt(stock);
     if (featured !== undefined) product.featured = featured === 'true';
-    
+
     // Update image if provided
     if (imageUrl) {
       product.image = imageUrl;
@@ -143,7 +173,7 @@ export const updateProduct = async (req, res) => {
       product.image = `/uploads/${req.file.filename}`;
       product.imageType = 'upload';
     }
-    
+
     await product.save();
     res.json(product);
   } catch (error) {
@@ -155,13 +185,13 @@ export const updateProduct = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
-    
+
     await product.deleteOne();
-    
+
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
@@ -171,10 +201,44 @@ export const deleteProduct = async (req, res) => {
 // Get featured products
 export const getFeaturedProducts = async (req, res) => {
   try {
-    const products = await Product.find({ featured: true }).limit(8);
-    res.json(products);
+    console.log('Fetching featured products...');
+
+    // Set explicit CORS headers for this route
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+    }
+
+    // Use a try-catch block specifically for the database query
+    try {
+      const products = await Product.find({ featured: true }).limit(8);
+      console.log(`Found ${products.length} featured products`);
+
+      // Return the products
+      return res.status(200).json(products);
+    } catch (dbError) {
+      console.error('Database error fetching featured products:', dbError);
+      // Set CORS headers again to ensure they're present in error responses
+      res.header('Access-Control-Allow-Origin', '*');
+      return res.status(500).json({
+        success: false,
+        message: 'Database error while fetching featured products',
+        error: dbError.message
+      });
+    }
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Unexpected error in getFeaturedProducts:', error);
+    // Set CORS headers again to ensure they're present in error responses
+    res.header('Access-Control-Allow-Origin', '*');
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching featured products',
+      error: error.message
+    });
   }
 };
 

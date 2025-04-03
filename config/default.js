@@ -7,7 +7,7 @@ export const config = {
       serverSelectionTimeoutMS: 120000,
       socketTimeoutMS: 120000,
       connectTimeoutMS: 120000,
-      // Removed deprecated keepAlive and keepAliveInitialDelay options
+      
       dbName: 'witty-witi'
     }
   },
@@ -24,14 +24,14 @@ export const config = {
   },
   cors: {
     productionOrigins: [
-      'https://wittywiti.com', 
+      'https://wittywiti.com',
       'https://wittywiti.vercel.app',
       'https://witty-witti-backend.onrender.com'
     ],
     developmentOrigins: [
-      'http://localhost:5173', 
-      'http://localhost:5174', 
-      'https://wittywiti.vercel.app/',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'https://wittywiti.vercel.app',
       'https://witty-witti-backend.onrender.com'
     ]
   }

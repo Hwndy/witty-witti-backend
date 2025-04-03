@@ -1,7 +1,7 @@
 import express from 'express';
-import cors from 'cors';
 import connectDB from './config/db.js';
 import { config } from './config/default.js';
+import corsConfig from './config/corsConfig.js';
 import authRoutes from './routes/authRoutes.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
@@ -9,12 +9,7 @@ const app = express();
 const PORT = process.env.PORT || config.server.port;
 
 // Middleware
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? config.cors.productionOrigins 
-    : config.cors.developmentOrigins,
-  credentials: true
-}));
+app.use(corsConfig);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -23,7 +18,7 @@ app.use('/api/auth', authRoutes);
 
 // Basic route to test server
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'Server is running',
     environment: process.env.NODE_ENV || config.server.env,
     timestamp: new Date().toISOString()
@@ -39,7 +34,7 @@ const startServer = async () => {
   try {
     // Connect to MongoDB
     await connectDB();
-    
+
     // Start the server
     const server = app.listen(PORT, () => {
       console.log(`✅ Server running successfully on port ${PORT}`);

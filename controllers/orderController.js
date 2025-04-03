@@ -2,9 +2,19 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import User from '../models/User.js';
 
-// Create a new order (for authenticated users)
+// Create a new order (works with or without authentication)
 export const createOrder = async (req, res) => {
   try {
+    // Set explicit CORS headers for this route
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.status(204).end();
+    }
+
     const {
       items,
       totalPrice,
@@ -16,8 +26,47 @@ export const createOrder = async (req, res) => {
       notes
     } = req.body;
 
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order must contain at least one item'
+      });
+    }
+
+    if (!totalPrice || !shippingAddress || !customerName || !customerEmail || !customerPhone || !paymentMethod) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required order fields'
+      });
+    }
+
+    let userId;
+
+    // If user is authenticated, use their ID
+    if (req.user && req.user._id) {
+      userId = req.user._id;
+    } else {
+      // For non-authenticated users, find or create a guest user
+      let guestUser = await User.findOne({ email: customerEmail, role: 'guest' });
+
+      if (!guestUser) {
+        // Create a new guest user
+        const randomPassword = Math.random().toString(36).slice(-8);
+        guestUser = await User.create({
+          username: `guest_${Date.now()}`,
+          email: customerEmail,
+          password: randomPassword,
+          role: 'guest'
+        });
+      }
+
+      userId = guestUser._id;
+    }
+
+    // Create the order
     const order = new Order({
-      user: req.user._id,
+      user: userId,
       items,
       totalPrice,
       shippingAddress,
@@ -25,7 +74,8 @@ export const createOrder = async (req, res) => {
       customerEmail,
       customerPhone,
       paymentMethod,
-      notes
+      notes,
+      isGuestOrder: !req.user
     });
 
     await order.save();
@@ -39,7 +89,16 @@ export const createOrder = async (req, res) => {
       }
     }
 
-    res.status(201).json(order);
+    res.status(201).json({
+      success: true,
+      order: {
+        id: order._id,
+        totalPrice: order.totalPrice,
+        status: order.status,
+        createdAt: order.createdAt
+      },
+      message: 'Order created successfully'
+    });
   } catch (error) {
     console.error('Error creating order:', error);
     res.status(500).json({

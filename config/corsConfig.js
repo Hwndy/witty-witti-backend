@@ -5,7 +5,7 @@ const corsOptions = {
   origin: function(origin, callback) {
     const isProduction = process.env.NODE_ENV === 'production' || config.server.env === 'production';
     const allowedOrigins = isProduction
-      ? config.cors.productionOrigins
+      ? [...config.cors.productionOrigins, 'https://witty-witi.vercel.app']
       : config.cors.developmentOrigins;
 
     // Allow requests with no origin (like mobile apps, curl requests)

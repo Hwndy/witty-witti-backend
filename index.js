@@ -137,18 +137,53 @@ const startServer = async () => {
     server.headersTimeout = config.server.timeouts.headers;
 
     // Graceful shutdown
-    const shutdown = async () => {
-      console.log('Received shutdown signal. Closing server...');
-      server.close(async () => {
-        console.log('Server closed. Disconnecting from database...');
-        await mongoose.disconnect();
-        console.log('Database disconnected. Exiting process.');
+    const shutdown = async (signal) => {
+      console.log(`Received ${signal} signal. Starting graceful shutdown...`);
+
+      // Set a timeout to force exit if graceful shutdown takes too long
+      const forceExitTimeout = setTimeout(() => {
+        console.error('Graceful shutdown timed out after 30s. Forcing exit.');
+        process.exit(1);
+      }, 30000);
+
+      try {
+        // First close the server to stop accepting new connections
+        console.log('Closing HTTP server...');
+        await new Promise((resolve, reject) => {
+          server.close((err) => {
+            if (err) {
+              console.error('Error closing server:', err);
+              reject(err);
+            } else {
+              console.log('HTTP server closed successfully.');
+              resolve();
+            }
+          });
+        });
+
+        // Then disconnect from MongoDB
+        if (mongoose.connection.readyState !== 0) { // 0 = disconnected
+          console.log('Disconnecting from MongoDB...');
+          await mongoose.disconnect();
+          console.log('MongoDB disconnected successfully.');
+        } else {
+          console.log('MongoDB already disconnected.');
+        }
+
+        // Clear the force exit timeout
+        clearTimeout(forceExitTimeout);
+        console.log('Graceful shutdown completed. Exiting process.');
         process.exit(0);
-      });
+      } catch (error) {
+        console.error('Error during graceful shutdown:', error);
+        clearTimeout(forceExitTimeout);
+        process.exit(1);
+      }
     };
 
-    process.on('SIGTERM', shutdown);
-    process.on('SIGINT', shutdown);
+    // Register shutdown handlers
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
 
   } catch (error) {
     console.error('❌ Failed to start server:', error);

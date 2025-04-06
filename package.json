@@ -11,6 +11,7 @@
     "create-test-products": "node scripts/createTestProduct.js",
     "test-products": "node scripts/testProductEndpoints.js",
     "test-order": "node scripts/testOrderEndpoint.js",
+    "test-db": "node scripts/testDbConnection.js",
     "update-placeholder-images": "node scripts/updatePlaceholderImages.js",
     "deploy-help": "node deploy.js",
     "deploy-guest-order": "node deploy-changes.js",
@@ -21,7 +22,8 @@
     "deploy-undefined-id-fix": "node deploy-undefined-id-fix.js",
     "deploy-order-cors-fix": "node deploy-order-cors-fix.js",
     "deploy-order-duplicate-fix": "node deploy-order-duplicate-fix.js",
-    "deploy-order-validation-fix": "node deploy-order-validation-fix.js"
+    "deploy-order-validation-fix": "node deploy-order-validation-fix.js",
+    "deploy-mongodb-fix": "node deploy-mongodb-fix.js"
   },
   "dependencies": {
     "axios": "^1.8.4",

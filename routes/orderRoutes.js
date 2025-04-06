@@ -8,12 +8,12 @@ import {
   updatePaymentStatus,
   cancelOrder
 } from '../controllers/orderController.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // Public routes
-router.post('/', createOrder);  // Now works with or without authentication
+router.post('/', optionalAuth, createOrder);  // Now works with or without authentication
 router.post('/guest', createGuestOrder);  // Keep for backward compatibility
 router.get('/', protect, getOrders);
 router.get('/:id', protect, getOrderById);

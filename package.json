@@ -11,13 +11,15 @@
     "create-test-products": "node scripts/createTestProduct.js",
     "test-products": "node scripts/testProductEndpoints.js",
     "test-order": "node scripts/testOrderEndpoint.js",
+    "update-placeholder-images": "node scripts/updatePlaceholderImages.js",
     "deploy-help": "node deploy.js",
     "deploy-guest-order": "node deploy-changes.js",
     "deploy-order-fix": "node deploy-order-fix.js",
     "deploy-cors-fix": "node deploy-cors-fix.js",
     "deploy-credentials-cors-fix": "node deploy-credentials-cors-fix.js",
     "deploy-auth-fix": "node deploy-auth-fix.js",
-    "deploy-undefined-id-fix": "node deploy-undefined-id-fix.js"
+    "deploy-undefined-id-fix": "node deploy-undefined-id-fix.js",
+    "deploy-order-cors-fix": "node deploy-order-cors-fix.js"
   },
   "dependencies": {
     "axios": "^1.8.4",

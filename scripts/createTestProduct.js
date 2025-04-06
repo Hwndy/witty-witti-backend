@@ -22,7 +22,7 @@ const createTestProduct = async () => {
       price: 99.99,
       category: 'accessories',
       description: 'This is a test product to verify the product endpoints are working correctly.',
-      image: 'https://via.placeholder.com/300',
+      image: 'https://placehold.co/300',
       imageType: 'url',
       stock: 100,
       featured: true
@@ -38,7 +38,7 @@ const createTestProduct = async () => {
         price: 599.99,
         category: 'phones',
         description: 'A high-quality test phone with amazing features.',
-        image: 'https://via.placeholder.com/300',
+        image: 'https://placehold.co/300',
         imageType: 'url',
         stock: 50,
         featured: true
@@ -48,7 +48,7 @@ const createTestProduct = async () => {
         price: 1299.99,
         category: 'laptops',
         description: 'A powerful test laptop for all your computing needs.',
-        image: 'https://via.placeholder.com/300',
+        image: 'https://placehold.co/300',
         imageType: 'url',
         stock: 25,
         featured: true
@@ -58,7 +58,7 @@ const createTestProduct = async () => {
         price: 149.99,
         category: 'headphones',
         description: 'Premium test headphones with noise cancellation.',
-        image: 'https://via.placeholder.com/300',
+        image: 'https://placehold.co/300',
         imageType: 'url',
         stock: 75,
         featured: false

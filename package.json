@@ -13,7 +13,8 @@
     "test-order": "node scripts/testOrderEndpoint.js",
     "deploy-help": "node deploy.js",
     "deploy-guest-order": "node deploy-changes.js",
-    "deploy-order-fix": "node deploy-order-fix.js"
+    "deploy-order-fix": "node deploy-order-fix.js",
+    "deploy-cors-fix": "node deploy-cors-fix.js"
   },
   "dependencies": {
     "axios": "^1.8.4",

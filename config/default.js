@@ -26,12 +26,16 @@ export const config = {
     productionOrigins: [
       'https://wittywiti.com',
       'https://wittywiti.vercel.app',
+      'https://witty-witi.vercel.app',
+      'http://witty-witi.vercel.app',
       'https://witty-witti-backend.onrender.com'
     ],
     developmentOrigins: [
       'http://localhost:5173',
       'http://localhost:5174',
       'https://wittywiti.vercel.app',
+      'https://witty-witi.vercel.app',
+      'http://witty-witi.vercel.app',
       'https://witty-witti-backend.onrender.com'
     ]
   }

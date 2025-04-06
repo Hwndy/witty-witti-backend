@@ -52,13 +52,28 @@ export const createReview = async (req, res) => {
 export const getProductReviews = async (req, res) => {
   try {
     const { productId } = req.params;
-    
+
+    if (!productId || productId === 'undefined') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product ID provided'
+      });
+    }
+
     const reviews = await Review.find({ product: productId })
       .sort({ createdAt: -1 });
-    
-    res.json(reviews);
+
+    res.json({
+      success: true,
+      data: reviews
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    console.error('Error in getProductReviews:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
 };
 

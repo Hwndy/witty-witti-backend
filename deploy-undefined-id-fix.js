@@ -1,0 +1,28 @@
+// This script provides instructions for deploying the undefined ID fix
+console.log('=== Undefined ID Fix Deployment Instructions ===');
+console.log('');
+console.log('This fix prevents 500 errors when undefined IDs are used in API requests');
+console.log('');
+console.log('To deploy these changes:');
+console.log('');
+console.log('1. Commit your changes:');
+console.log('   git add .');
+console.log('   git commit -m "Fix handling of undefined IDs in API requests"');
+console.log('');
+console.log('2. Push to your repository:');
+console.log('   git push origin main');
+console.log('');
+console.log('3. If you\'re using Render for deployment, it should automatically deploy the changes.');
+console.log('   Otherwise, deploy manually according to your hosting provider\'s instructions.');
+console.log('');
+console.log('4. After deployment, test the API endpoints from witty-witi.vercel.app');
+console.log('');
+console.log('The following changes have been made:');
+console.log('1. Updated the product controller to handle invalid IDs gracefully');
+console.log('2. Updated the review controller to handle invalid product IDs gracefully');
+console.log('3. Added optional authentication to the review routes');
+console.log('');
+console.log('For the frontend, consider implementing the following:');
+console.log('1. Create a productUtils.js file with the provided utility functions');
+console.log('2. Use these utilities when navigating to product details or fetching product data');
+console.log('3. Add validation to prevent undefined IDs from being used in API requests');

@@ -1,12 +1,12 @@
 import express from 'express';
-import { 
-  createReview, 
-  getProductReviews, 
-  updateReview, 
+import {
+  createReview,
+  getProductReviews,
+  updateReview,
   deleteReview,
   getUserReviews
 } from '../controllers/reviewController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -14,7 +14,7 @@ const router = express.Router();
 router.post('/', protect, createReview);
 
 // Get all reviews for a product
-router.get('/product/:productId', getProductReviews);
+router.get('/product/:productId', optionalAuth, getProductReviews);
 
 // Get user's reviews
 router.get('/user', protect, getUserReviews);

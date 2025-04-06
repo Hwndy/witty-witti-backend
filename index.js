@@ -63,8 +63,11 @@ app.get('/', (_req, res) => {
   });
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
+// Import optional auth middleware
+import { optionalAuth } from './middleware/authMiddleware.js';
+
+// Health check endpoint with optional authentication
+app.get('/api/health', optionalAuth, (req, res) => {
   // Set CORS headers for health check
   const origin = req.headers.origin;
   if (origin) {

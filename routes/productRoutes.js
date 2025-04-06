@@ -2,16 +2,16 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { 
-  getProducts, 
-  getProductById, 
-  createProduct, 
-  updateProduct, 
+import {
+  getProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
   deleteProduct,
   getFeaturedProducts,
   getProductsByCategory
 } from '../controllers/productController.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import { protect, admin, optionalAuth } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -28,14 +28,14 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: function(req, file, cb) {
     const filetypes = /jpeg|jpg|png|webp/;
     const mimetype = filetypes.test(file.mimetype);
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     }
@@ -43,11 +43,11 @@ const upload = multer({
   }
 });
 
-// Public routes
-router.get('/', getProducts);
-router.get('/featured', getFeaturedProducts);
-router.get('/category/:category', getProductsByCategory);
-router.get('/:id', getProductById);
+// Public routes with optional authentication
+router.get('/', optionalAuth, getProducts);
+router.get('/featured', optionalAuth, getFeaturedProducts);
+router.get('/category/:category', optionalAuth, getProductsByCategory);
+router.get('/:id', optionalAuth, getProductById);
 
 // Admin routes
 router.post('/', protect, admin, upload.single('image'), createProduct);

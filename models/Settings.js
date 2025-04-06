@@ -6,7 +6,7 @@ const settingsSchema = new mongoose.Schema({
     storeEmail: { type: String, required: true },
     storePhone: { type: String, required: true },
     storeAddress: { type: String, required: true },
-    currencySymbol: { type: String, default: '$' },
+    currencySymbol: { type: String, default: '₦' },
     taxRate: { type: Number, default: 0 }
   },
   payment: {

@@ -4,7 +4,7 @@ const orderSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false // Allow null for guest orders
   },
   items: [{
     product: {
@@ -12,24 +12,13 @@ const orderSchema = new mongoose.Schema({
       ref: 'Product',
       required: true
     },
-    name: {
-      type: String,
-      required: true
-    },
-    price: {
-      type: Number,
-      required: true
-    },
-    quantity: {
-      type: Number,
-      required: true,
-      min: 1
-    }
+    name: String,
+    price: Number,
+    quantity: Number
   }],
   totalPrice: {
     type: Number,
-    required: true,
-    min: 0
+    required: true
   },
   shippingAddress: {
     type: String,
@@ -49,34 +38,25 @@ const orderSchema = new mongoose.Schema({
   },
   paymentMethod: {
     type: String,
-    enum: ['card', 'paypal', 'bank_transfer', 'cash_on_delivery'],
     required: true
-  },
-  paymentStatus: {
-    type: String,
-    enum: ['pending', 'paid', 'failed'],
-    default: 'pending'
   },
   status: {
     type: String,
     enum: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
     default: 'pending'
   },
-  notes: {
-    type: String
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed'],
+    default: 'pending'
   },
   isGuestOrder: {
     type: Boolean,
     default: false
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
+  notes: String
+}, {
+  timestamps: true
 });
 
 const Order = mongoose.model('Order', orderSchema);

@@ -20,7 +20,6 @@ export const createOrder = async (req, res) => {
     if (req.method === 'OPTIONS') {
       return res.status(204).end();
     }
-
     const {
       items,
       totalPrice,
@@ -40,37 +39,42 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    if (!totalPrice || !shippingAddress || !customerName || !customerEmail || !customerPhone || !paymentMethod) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required order fields'
-      });
-    }
+    let userId = null;
 
-    let userId;
+    // Log authentication status for debugging
+    console.log('Authentication status:', req.user ? 'Authenticated' : 'Not authenticated');
+    if (req.user) {
+      console.log('User ID:', req.user._id);
+      console.log('User email:', req.user.email);
+    }
+    console.log('Customer email from request:', customerEmail);
 
     // If user is authenticated, use their ID
     if (req.user && req.user._id) {
+      console.log('Using authenticated user ID for order');
       userId = req.user._id;
     } else {
-      // For non-authenticated users, find or create a guest user
-      let guestUser = await User.findOne({ email: customerEmail, role: 'guest' });
+      // For non-authenticated users, find existing user by email
+      try {
+        console.log('Looking for existing user with email:', customerEmail);
+        const existingUser = await User.findOne({ email: customerEmail });
 
-      if (!guestUser) {
-        // Create a new guest user
-        const randomPassword = Math.random().toString(36).slice(-8);
-        guestUser = await User.create({
-          username: `guest_${Date.now()}`,
-          email: customerEmail,
-          password: randomPassword,
-          role: 'guest'
-        });
+        if (existingUser) {
+          console.log('Found existing user:', existingUser._id);
+          userId = existingUser._id;
+        } else {
+          console.log('No existing user found, proceeding as guest');
+          // We'll create the order without a user ID
+          userId = null;
+        }
+      } catch (error) {
+        console.error('Error finding user:', error);
+        // Continue with null userId if user lookup fails
+        userId = null;
       }
-
-      userId = guestUser._id;
     }
 
-    // Create the order
+    // Create the order without attempting to create a new user
     const order = new Order({
       user: userId,
       items,
@@ -81,18 +85,18 @@ export const createOrder = async (req, res) => {
       customerPhone,
       paymentMethod,
       notes,
-      isGuestOrder: !req.user
+      isGuestOrder: !userId
     });
 
     await order.save();
 
     // Update product stock
     for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (product) {
-        product.stock -= item.quantity;
-        await product.save();
-      }
+      await Product.findByIdAndUpdate(
+        item.product,
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      );
     }
 
     res.status(201).json({
@@ -107,7 +111,28 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating order:', error);
-    res.status(500).json({
+
+    // Set CORS headers again to ensure they're present in error responses
+    const origin = req.headers.origin;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
+
+    // Handle MongoDB duplicate key errors specifically
+    if (error.code === 11000) {
+      console.log('Duplicate key error detected');
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists',
+        error: 'Duplicate email address'
+      });
+    }
+
+    // Handle other errors
+    return res.status(500).json({
       success: false,
       message: 'Server error while creating order',
       error: error.message
@@ -119,9 +144,15 @@ export const createOrder = async (req, res) => {
 export const createGuestOrder = async (req, res) => {
   try {
     // Set explicit CORS headers for this route
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
     res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
@@ -189,7 +220,28 @@ export const createGuestOrder = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating guest order:', error);
-    res.status(500).json({
+
+    // Set CORS headers again to ensure they're present in error responses
+    const origin = req.headers.origin;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
+
+    // Handle MongoDB duplicate key errors specifically
+    if (error.code === 11000) {
+      console.log('Duplicate key error detected in guest order');
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists',
+        error: 'Duplicate email address'
+      });
+    }
+
+    // Handle other errors
+    return res.status(500).json({
       success: false,
       message: 'Server error while creating guest order',
       error: error.message

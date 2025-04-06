@@ -5,21 +5,6 @@ import User from '../models/User.js';
 // Create a new order (works with or without authentication)
 export const createOrder = async (req, res) => {
   try {
-    // Set explicit CORS headers for this route
-    const origin = req.headers.origin;
-    if (origin) {
-      res.header('Access-Control-Allow-Origin', origin);
-      res.header('Access-Control-Allow-Credentials', 'true');
-    } else {
-      res.header('Access-Control-Allow-Origin', '*');
-    }
-    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-
-    // Handle preflight requests
-    if (req.method === 'OPTIONS') {
-      return res.status(204).end();
-    }
     const {
       items,
       totalPrice,
@@ -39,45 +24,63 @@ export const createOrder = async (req, res) => {
       });
     }
 
-    let userId = null;
-
-    // Log authentication status for debugging
-    console.log('Authentication status:', req.user ? 'Authenticated' : 'Not authenticated');
-    if (req.user) {
-      console.log('User ID:', req.user._id);
-      console.log('User email:', req.user.email);
-    }
-    console.log('Customer email from request:', customerEmail);
-
-    // If user is authenticated, use their ID
-    if (req.user && req.user._id) {
-      console.log('Using authenticated user ID for order');
-      userId = req.user._id;
-    } else {
-      // For non-authenticated users, find existing user by email
-      try {
-        console.log('Looking for existing user with email:', customerEmail);
-        const existingUser = await User.findOne({ email: customerEmail });
-
-        if (existingUser) {
-          console.log('Found existing user:', existingUser._id);
-          userId = existingUser._id;
-        } else {
-          console.log('No existing user found, proceeding as guest');
-          // We'll create the order without a user ID
-          userId = null;
-        }
-      } catch (error) {
-        console.error('Error finding user:', error);
-        // Continue with null userId if user lookup fails
-        userId = null;
+    // Validate each item has required fields
+    for (const item of items) {
+      if (!item.productId && !item.product) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each order item must have a product ID'
+        });
+      }
+      if (!item.quantity || item.quantity < 1) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each order item must have a valid quantity'
+        });
       }
     }
 
-    // Create the order without attempting to create a new user
+    if (!totalPrice || !shippingAddress || !customerName || !customerEmail || !customerPhone || !paymentMethod) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required order fields'
+      });
+    }
+
+    let userId;
+
+    // If user is authenticated, use their ID
+    if (req.user && req.user._id) {
+      userId = req.user._id;
+    } else {
+      // For non-authenticated users, find or create a guest user
+      let guestUser = await User.findOne({ email: customerEmail, role: 'guest' });
+
+      if (!guestUser) {
+        const randomPassword = Math.random().toString(36).slice(-8);
+        guestUser = await User.create({
+          username: `guest_${Date.now()}`,
+          email: customerEmail,
+          password: randomPassword,
+          role: 'guest'
+        });
+      }
+      userId = guestUser._id;
+    }
+
+    // Prepare order items with proper product references
+    const orderItems = items.map(item => ({
+      product: item.productId || item.product,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      image: item.image
+    }));
+
+    // Create the order
     const order = new Order({
       user: userId,
-      items,
+      items: orderItems,
       totalPrice,
       shippingAddress,
       customerName,
@@ -85,18 +88,18 @@ export const createOrder = async (req, res) => {
       customerPhone,
       paymentMethod,
       notes,
-      isGuestOrder: !userId
+      isGuestOrder: !req.user
     });
 
     await order.save();
 
     // Update product stock
-    for (const item of items) {
-      await Product.findByIdAndUpdate(
-        item.product,
-        { $inc: { stock: -item.quantity } },
-        { new: true }
-      );
+    for (const item of orderItems) {
+      const product = await Product.findById(item.product);
+      if (product) {
+        product.stock -= item.quantity;
+        await product.save();
+      }
     }
 
     res.status(201).json({
@@ -105,34 +108,14 @@ export const createOrder = async (req, res) => {
         id: order._id,
         totalPrice: order.totalPrice,
         status: order.status,
-        createdAt: order.createdAt
+        createdAt: order.createdAt,
+        items: order.items
       },
       message: 'Order created successfully'
     });
   } catch (error) {
     console.error('Error creating order:', error);
-
-    // Set CORS headers again to ensure they're present in error responses
-    const origin = req.headers.origin;
-    if (origin) {
-      res.header('Access-Control-Allow-Origin', origin);
-      res.header('Access-Control-Allow-Credentials', 'true');
-    } else {
-      res.header('Access-Control-Allow-Origin', '*');
-    }
-
-    // Handle MongoDB duplicate key errors specifically
-    if (error.code === 11000) {
-      console.log('Duplicate key error detected');
-      return res.status(400).json({
-        success: false,
-        message: 'User with this email already exists',
-        error: 'Duplicate email address'
-      });
-    }
-
-    // Handle other errors
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       message: 'Server error while creating order',
       error: error.message
@@ -169,6 +152,44 @@ export const createGuestOrder = async (req, res) => {
       notes
     } = req.body;
 
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Order must contain at least one item'
+      });
+    }
+
+    // Log the items for debugging
+    console.log('Guest order items received:', JSON.stringify(items, null, 2));
+
+    // Validate each item has the required fields
+    for (const item of items) {
+      if (!item.product) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each order item must have a product ID'
+        });
+      }
+
+      if (!item.quantity || item.quantity <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each order item must have a valid quantity'
+        });
+      }
+    }
+
+    // Format the items to ensure they have all required fields
+    const formattedItems = items.map(item => ({
+      product: item.product,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity
+    }));
+
+    console.log('Formatted guest order items:', JSON.stringify(formattedItems, null, 2));
+
     // Find or create a guest user
     let guestUser = await User.findOne({ email: customerEmail, role: 'guest' });
 
@@ -186,7 +207,7 @@ export const createGuestOrder = async (req, res) => {
     // Create the order with the guest user
     const order = new Order({
       user: guestUser._id,
-      items,
+      items: formattedItems,
       totalPrice,
       shippingAddress,
       customerName,
@@ -197,14 +218,40 @@ export const createGuestOrder = async (req, res) => {
       isGuestOrder: true
     });
 
-    await order.save();
+    // Log the order before saving
+    console.log('Guest order to be saved:', JSON.stringify({
+      user: guestUser._id,
+      items: formattedItems.map(item => ({ product: item.product, quantity: item.quantity })),
+      totalPrice,
+      customerEmail,
+      isGuestOrder: true
+    }, null, 2));
+
+    try {
+      await order.save();
+      console.log('Guest order saved successfully with ID:', order._id);
+    } catch (validationError) {
+      console.error('Guest order validation error:', validationError);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order data',
+        error: validationError.message
+      });
+    }
 
     // Update product stock
-    for (const item of items) {
-      const product = await Product.findById(item.product);
-      if (product) {
-        product.stock -= item.quantity;
-        await product.save();
+    for (const item of formattedItems) {
+      try {
+        const product = await Product.findById(item.product);
+        if (product) {
+          product.stock -= item.quantity;
+          await product.save();
+          console.log(`Updated stock for product ${item.product} to ${product.stock}`);
+        } else {
+          console.log(`Product not found: ${item.product}`);
+        }
+      } catch (error) {
+        console.error(`Error updating stock for product ${item.product}:`, error);
       }
     }
 
@@ -237,6 +284,17 @@ export const createGuestOrder = async (req, res) => {
         success: false,
         message: 'User with this email already exists',
         error: 'Duplicate email address'
+      });
+    }
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      console.log('Validation error detected in guest order:', error.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order data',
+        error: error.message,
+        details: error.errors
       });
     }
 

@@ -20,7 +20,8 @@
     "deploy-auth-fix": "node deploy-auth-fix.js",
     "deploy-undefined-id-fix": "node deploy-undefined-id-fix.js",
     "deploy-order-cors-fix": "node deploy-order-cors-fix.js",
-    "deploy-order-duplicate-fix": "node deploy-order-duplicate-fix.js"
+    "deploy-order-duplicate-fix": "node deploy-order-duplicate-fix.js",
+    "deploy-order-validation-fix": "node deploy-order-validation-fix.js"
   },
   "dependencies": {
     "axios": "^1.8.4",

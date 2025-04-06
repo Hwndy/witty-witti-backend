@@ -6,9 +6,15 @@ export const getProducts = async (req, res) => {
     console.log('Fetching products with query:', req.query);
 
     // Set explicit CORS headers for this route
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
@@ -204,9 +210,15 @@ export const getFeaturedProducts = async (req, res) => {
     console.log('Fetching featured products...');
 
     // Set explicit CORS headers for this route
-    res.header('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
     // Handle preflight requests
     if (req.method === 'OPTIONS') {

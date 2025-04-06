@@ -15,21 +15,27 @@ const corsOptions = {
       return callback(null, true);
     }
 
+    // Special case for witty-witi.vercel.app
+    if (origin && origin.includes('witty-witi.vercel.app')) {
+      console.log('CORS: Allowing witty-witi.vercel.app origin:', origin);
+      return callback(null, origin);
+    }
+
+    // Special case for localhost
+    if (origin && origin.includes('localhost')) {
+      console.log('CORS: Allowing localhost origin:', origin);
+      return callback(null, origin);
+    }
+
     // In development mode, allow all origins for easier testing
     if (!isProduction) {
       console.log('CORS: Development mode - allowing origin:', origin);
-      return callback(null, true);
-    }
-
-    // Special case for witty-witi.vercel.app
-    if (origin.includes('witty-witi.vercel.app')) {
-      console.log('CORS: Allowing witty-witi.vercel.app origin:', origin);
-      return callback(null, true);
+      return callback(null, origin || true);
     }
 
     if (allowedOrigins.indexOf(origin) !== -1) {
       console.log('CORS: Allowed origin:', origin);
-      callback(null, true);
+      callback(null, origin);
     } else {
       console.log('CORS blocked origin:', origin);
       callback(null, false);

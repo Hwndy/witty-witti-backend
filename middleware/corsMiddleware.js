@@ -13,19 +13,32 @@ export const corsMiddleware = (req, res, next) => {
   const origin = req.headers.origin;
   console.log('CORS Middleware - Request from origin:', origin);
 
-  // Special case for witty-witi.vercel.app
-  if (origin && origin.includes('witty-witi.vercel.app')) {
-    console.log('CORS Middleware - Allowing witty-witi.vercel.app origin:', origin);
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  // Set CORS headers for known origins
-  else if (origin && allowedOrigins.includes(origin)) {
-    console.log('CORS Middleware - Allowing known origin:', origin);
-    res.setHeader('Access-Control-Allow-Origin', origin);
+  // Never use wildcard with credentials
+  if (origin) {
+    // Special case for witty-witi.vercel.app
+    if (origin.includes('witty-witi.vercel.app')) {
+      console.log('CORS Middleware - Allowing witty-witi.vercel.app origin:', origin);
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    // Set CORS headers for known origins
+    else if (allowedOrigins.includes(origin)) {
+      console.log('CORS Middleware - Allowing known origin:', origin);
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    // For development, allow any origin but still specify it (not wildcard)
+    else if (process.env.NODE_ENV !== 'production') {
+      console.log('CORS Middleware - Development mode, allowing origin:', origin);
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    // For unknown origins in production, block
+    else {
+      console.log('CORS Middleware - Blocking unknown origin:', origin);
+      res.setHeader('Access-Control-Allow-Origin', 'null');
+    }
   } else {
-    // For requests without origin or unknown origins, allow all in development
-    console.log('CORS Middleware - Using wildcard for origin:', origin);
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    // For requests without origin, use a safe default
+    console.log('CORS Middleware - No origin provided');
+    res.setHeader('Access-Control-Allow-Origin', 'null');
   }
 
   // Allow credentials

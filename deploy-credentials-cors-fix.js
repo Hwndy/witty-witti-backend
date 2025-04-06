@@ -1,0 +1,25 @@
+// This script provides instructions for deploying the CORS credentials fix
+console.log('=== CORS Credentials Fix Deployment Instructions ===');
+console.log('');
+console.log('This fix updates the CORS configuration to properly handle requests with credentials');
+console.log('');
+console.log('To deploy these changes:');
+console.log('');
+console.log('1. Commit your changes:');
+console.log('   git add .');
+console.log('   git commit -m "Fix CORS for requests with credentials"');
+console.log('');
+console.log('2. Push to your repository:');
+console.log('   git push origin main');
+console.log('');
+console.log('3. If you\'re using Render for deployment, it should automatically deploy the changes.');
+console.log('   Otherwise, deploy manually according to your hosting provider\'s instructions.');
+console.log('');
+console.log('4. After deployment, test the API endpoints from witty-witi.vercel.app');
+console.log('');
+console.log('The following changes have been made:');
+console.log('1. Updated CORS headers in product controllers to use specific origin instead of wildcard');
+console.log('2. Added a health check endpoint at /api/health');
+console.log('3. Updated error middleware to handle CORS with credentials properly');
+console.log('');
+console.log('These changes ensure that requests with credentials (withCredentials: true) work correctly.');

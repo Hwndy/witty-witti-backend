@@ -43,16 +43,16 @@ export const errorHandler = (err, req, res, next) => {
   // Set CORS headers on error responses
   const origin = req.headers.origin;
 
-  // Special case for witty-witi.vercel.app
-  if (origin && origin.includes('witty-witi.vercel.app')) {
+  // Always use the specific origin when credentials are involved
+  if (origin) {
     res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
   } else {
     res.header('Access-Control-Allow-Origin', '*');
   }
 
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
 
   res.status(error.statusCode || 500).json({
     success: false,

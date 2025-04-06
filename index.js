@@ -63,6 +63,28 @@ app.get('/', (_req, res) => {
   });
 });
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  // Set CORS headers for health check
+  const origin = req.headers.origin;
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+  // Return health status
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || config.server.env
+  });
+});
+
 // Error handling
 app.use(notFound);
 app.use(errorHandler);

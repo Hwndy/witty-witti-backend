@@ -23,7 +23,8 @@
     "deploy-order-cors-fix": "node deploy-order-cors-fix.js",
     "deploy-order-duplicate-fix": "node deploy-order-duplicate-fix.js",
     "deploy-order-validation-fix": "node deploy-order-validation-fix.js",
-    "deploy-mongodb-fix": "node deploy-mongodb-fix.js"
+    "deploy-mongodb-fix": "node deploy-mongodb-fix.js",
+    "deploy-order-product-lookup-fix": "node deploy-order-product-lookup-fix.js"
   },
   "dependencies": {
     "axios": "^1.8.4",

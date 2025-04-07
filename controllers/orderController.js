@@ -69,13 +69,62 @@ export const createOrder = async (req, res) => {
     }
 
     // Prepare order items with proper product references
-    const orderItems = items.map(item => ({
-      product: item.productId || item.product,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-      image: item.image
-    }));
+    // For items without product IDs, try to find the product by name
+    const orderItems = [];
+
+    for (const item of items) {
+      const productId = item.productId || item.product;
+
+      // If product ID is missing but name is present, try to find the product by name
+      if (!productId && item.name) {
+        try {
+          console.log(`Looking up product by name: ${item.name}`);
+          const product = await Product.findOne({
+            name: { $regex: new RegExp('^' + item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
+          });
+
+          if (product) {
+            console.log(`Found product by name: ${item.name}, ID: ${product._id}`);
+            orderItems.push({
+              product: product._id,
+              name: item.name,
+              price: item.price || product.price,
+              quantity: item.quantity,
+              image: item.image || product.image
+            });
+          } else {
+            console.log(`Product not found by name: ${item.name}`);
+            // Use a temporary ObjectId for items without a matching product
+            orderItems.push({
+              product: new mongoose.Types.ObjectId(),
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image
+            });
+          }
+        } catch (error) {
+          console.error(`Error looking up product by name: ${item.name}`, error);
+          // Use a temporary ObjectId for items with lookup errors
+          orderItems.push({
+            product: new mongoose.Types.ObjectId(),
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          });
+        }
+      } else {
+        // Item has a product ID, use it as is
+        orderItems.push({
+          product: productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        });
+      }
+    }
 
     // Create the order
     const order = new Order({
@@ -95,10 +144,23 @@ export const createOrder = async (req, res) => {
 
     // Update product stock
     for (const item of orderItems) {
-      const product = await Product.findById(item.product);
-      if (product) {
-        product.stock -= item.quantity;
-        await product.save();
+      try {
+        // Skip stock update for items with temporary ObjectIds
+        if (!mongoose.Types.ObjectId.isValid(item.product)) {
+          console.log(`Skipping stock update for invalid product ID: ${item.product}`);
+          continue;
+        }
+
+        const product = await Product.findById(item.product);
+        if (product) {
+          product.stock -= item.quantity;
+          await product.save();
+          console.log(`Updated stock for product ${product.name} (${item.product}) to ${product.stock}`);
+        } else {
+          console.log(`Product not found for stock update: ${item.product}`);
+        }
+      } catch (error) {
+        console.error(`Error updating stock for product ${item.product}:`, error);
       }
     }
 
@@ -165,28 +227,79 @@ export const createGuestOrder = async (req, res) => {
 
     // Validate each item has the required fields
     for (const item of items) {
-      if (!item.product) {
-        return res.status(400).json({
-          success: false,
-          message: 'Each order item must have a product ID'
-        });
-      }
-
       if (!item.quantity || item.quantity <= 0) {
         return res.status(400).json({
           success: false,
           message: 'Each order item must have a valid quantity'
         });
       }
+
+      // If product ID is missing but name is present, we'll try to find the product by name later
+      if (!item.product && !item.name) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each order item must have either a product ID or a product name'
+        });
+      }
     }
 
-    // Format the items to ensure they have all required fields
-    const formattedItems = items.map(item => ({
-      product: item.product,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity
-    }));
+    // Prepare order items with proper product references
+    // For items without product IDs, try to find the product by name
+    const formattedItems = [];
+
+    for (const item of items) {
+      const productId = item.productId || item.product;
+
+      // If product ID is missing but name is present, try to find the product by name
+      if (!productId && item.name) {
+        try {
+          console.log(`Looking up product by name: ${item.name}`);
+          const product = await Product.findOne({
+            name: { $regex: new RegExp('^' + item.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') }
+          });
+
+          if (product) {
+            console.log(`Found product by name: ${item.name}, ID: ${product._id}`);
+            formattedItems.push({
+              product: product._id,
+              name: item.name,
+              price: item.price || product.price,
+              quantity: item.quantity,
+              image: item.image || product.image
+            });
+          } else {
+            console.log(`Product not found by name: ${item.name}`);
+            // Use a temporary ObjectId for items without a matching product
+            formattedItems.push({
+              product: new mongoose.Types.ObjectId(),
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              image: item.image
+            });
+          }
+        } catch (error) {
+          console.error(`Error looking up product by name: ${item.name}`, error);
+          // Use a temporary ObjectId for items with lookup errors
+          formattedItems.push({
+            product: new mongoose.Types.ObjectId(),
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          });
+        }
+      } else {
+        // Item has a product ID, use it as is
+        formattedItems.push({
+          product: productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.image
+        });
+      }
+    }
 
     console.log('Formatted guest order items:', JSON.stringify(formattedItems, null, 2));
 
@@ -242,13 +355,19 @@ export const createGuestOrder = async (req, res) => {
     // Update product stock
     for (const item of formattedItems) {
       try {
+        // Skip stock update for items with temporary ObjectIds
+        if (!mongoose.Types.ObjectId.isValid(item.product)) {
+          console.log(`Skipping stock update for invalid product ID: ${item.product}`);
+          continue;
+        }
+
         const product = await Product.findById(item.product);
         if (product) {
           product.stock -= item.quantity;
           await product.save();
-          console.log(`Updated stock for product ${item.product} to ${product.stock}`);
+          console.log(`Updated stock for product ${product.name} (${item.product}) to ${product.stock}`);
         } else {
-          console.log(`Product not found: ${item.product}`);
+          console.log(`Product not found for stock update: ${item.product}`);
         }
       } catch (error) {
         console.error(`Error updating stock for product ${item.product}:`, error);

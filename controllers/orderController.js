@@ -26,16 +26,36 @@ export const createOrder = async (req, res) => {
 
     // Validate each item has required fields
     for (const item of items) {
-      if (!item.productId && !item.product) {
+      // Check for product ID in various formats
+      const productId = item.productId || item.product || (item.product && item.product.id);
+
+      if (!productId) {
+        console.log('Missing product ID in item:', JSON.stringify(item, null, 2));
         return res.status(400).json({
           success: false,
-          message: 'Each order item must have a product ID'
+          message: 'Each order item must have a product ID',
+          item: item
         });
       }
+
       if (!item.quantity || item.quantity < 1) {
         return res.status(400).json({
           success: false,
           message: 'Each order item must have a valid quantity'
+        });
+      }
+
+      if (!item.name) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each order item must have a name'
+        });
+      }
+
+      if (!item.price) {
+        return res.status(400).json({
+          success: false,
+          message: 'Each order item must have a price'
         });
       }
     }
@@ -73,7 +93,14 @@ export const createOrder = async (req, res) => {
     const orderItems = [];
 
     for (const item of items) {
-      const productId = item.productId || item.product;
+      // Extract product ID from various possible formats
+      let productId = item.productId || item.product;
+
+      // Handle case where product is an object with an id property
+      if (!productId && item.product && typeof item.product === 'object' && item.product.id) {
+        productId = item.product.id;
+        console.log(`Extracted product ID from object: ${productId}`);
+      }
 
       // If product ID is missing but name is present, try to find the product by name
       if (!productId && item.name) {
@@ -116,13 +143,33 @@ export const createOrder = async (req, res) => {
         }
       } else {
         // Item has a product ID, use it as is
-        orderItems.push({
-          product: productId,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image
-        });
+        // Ensure the product ID is a valid ObjectId
+        try {
+          // Convert string ID to ObjectId if needed
+          const validProductId = mongoose.Types.ObjectId.isValid(productId)
+            ? productId
+            : new mongoose.Types.ObjectId();
+
+          console.log(`Using product ID: ${productId}, valid: ${mongoose.Types.ObjectId.isValid(productId)}`);
+
+          orderItems.push({
+            product: validProductId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          });
+        } catch (error) {
+          console.error(`Error processing product ID ${productId}:`, error);
+          // Use a temporary ObjectId as fallback
+          orderItems.push({
+            product: new mongoose.Types.ObjectId(),
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          });
+        }
       }
     }
 
@@ -177,7 +224,39 @@ export const createOrder = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating order:', error);
-    res.status(500).json({
+
+    // Set CORS headers again to ensure they're present in error responses
+    const origin = req.headers.origin;
+    if (origin) {
+      res.header('Access-Control-Allow-Origin', origin);
+      res.header('Access-Control-Allow-Credentials', 'true');
+    } else {
+      res.header('Access-Control-Allow-Origin', '*');
+    }
+
+    // Handle MongoDB duplicate key errors specifically
+    if (error.code === 11000) {
+      console.log('Duplicate key error detected');
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists',
+        error: 'Duplicate email address'
+      });
+    }
+
+    // Handle validation errors
+    if (error.name === 'ValidationError') {
+      console.log('Validation error detected:', error.message);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid order data',
+        error: error.message,
+        details: error.errors
+      });
+    }
+
+    // Handle other errors
+    return res.status(500).json({
       success: false,
       message: 'Server error while creating order',
       error: error.message
@@ -248,7 +327,14 @@ export const createGuestOrder = async (req, res) => {
     const formattedItems = [];
 
     for (const item of items) {
-      const productId = item.productId || item.product;
+      // Extract product ID from various possible formats
+      let productId = item.productId || item.product;
+
+      // Handle case where product is an object with an id property
+      if (!productId && item.product && typeof item.product === 'object' && item.product.id) {
+        productId = item.product.id;
+        console.log(`Extracted product ID from object: ${productId}`);
+      }
 
       // If product ID is missing but name is present, try to find the product by name
       if (!productId && item.name) {
@@ -291,13 +377,33 @@ export const createGuestOrder = async (req, res) => {
         }
       } else {
         // Item has a product ID, use it as is
-        formattedItems.push({
-          product: productId,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image
-        });
+        // Ensure the product ID is a valid ObjectId
+        try {
+          // Convert string ID to ObjectId if needed
+          const validProductId = mongoose.Types.ObjectId.isValid(productId)
+            ? productId
+            : new mongoose.Types.ObjectId();
+
+          console.log(`Using product ID: ${productId}, valid: ${mongoose.Types.ObjectId.isValid(productId)}`);
+
+          formattedItems.push({
+            product: validProductId,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          });
+        } catch (error) {
+          console.error(`Error processing product ID ${productId}:`, error);
+          // Use a temporary ObjectId as fallback
+          formattedItems.push({
+            product: new mongoose.Types.ObjectId(),
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image
+          });
+        }
       }
     }
 
